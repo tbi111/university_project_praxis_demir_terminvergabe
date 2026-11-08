@@ -16,7 +16,7 @@ Die erste Angabe jeder Zeile ist der Schlüssel, ein Pfeil (→) kennzeichnet ei
 | Arzt | arzt_id, name, titel, aktiv |
 | Terminart | terminart_id, bezeichnung, dauer_minuten, online_buchbar |
 | Sprechzeit | sprechzeit_id, arzt → Arzt, wochentag, beginn, ende |
-| Termin | termin_id, patient → Patient, arzt → Arzt, terminart → Terminart, beginn, status (gebucht, abgesagt, wahrgenommen, no_show), ist_vertretung |
+| Termin | termin_id, patient → Patient, arzt → Arzt, terminart → Terminart, beginn, status (gebucht, abgesagt, wahrgenommen, no_show) |
 | Abwesenheit | abwesenheit_id, arzt → Arzt (leer = ganze Praxis), von, bis, grund |
 | Wiederholungsrezept | rezept_id, patient → Patient, medikament, status (beantragt, freigegeben, abgeholt) |
 | Notiz | notiz_id, termin → Termin, typ (MFA, Arzt intern, Vertretung), text |
@@ -29,7 +29,7 @@ Terminarten laut Kundin (Nachr. 3, 4): Beratung 15 min, Vorsorge 20–30 min, Im
 - Arzt 1:n Termin (Nachr. 2)
 - Terminart 1:n Termin, die Terminart legt die Dauer fest (Nachr. 2, 3)
 - Arzt n:m Terminart: Nicht jeder Arzt bietet jede Terminart an, Impfungen macht z. B. nur Dr. Demir (Nachr. 3)
-- Arzt 1:n Patient als Hausärzt:in, das bleibt auch bei einer Vertretung so (Nachr. 2, 9)
+- Arzt 1:n Patient als Hausärzt:in, das bleibt auch bei einer Vertretung so. Eine Vertretung liegt vor, wenn der Arzt am Termin nicht die Hausärzt:in des Patienten ist (Nachr. 2, 9, 13)
 - Arzt 1:n Sprechzeit, da jeder Arzt einen eigenen Wochenplan hat (Nachr. 18)
 - Arzt 0..1:n Abwesenheit, ohne Arzt gilt sie für die ganze Praxis (Nachr. 12, 14)
 - Patient 1:n Wiederholungsrezept (Nachr. 19)
