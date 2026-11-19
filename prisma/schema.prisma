@@ -1,0 +1,12 @@
+// Datenmodell der Praxis Demir & Kollegen.
+// Die Modelle entstehen mit dem ersten Feature, das sie braucht (siehe AGENTS.md, Backlog).
+// Änderungen nur als Migration: npx prisma migrate dev
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
