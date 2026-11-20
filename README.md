@@ -6,7 +6,7 @@ Die Gemeinschaftspraxis von Dr. Demir vergibt ihre Termine bisher fast nur telef
 
 ## Stand
 
-Die Anforderungsanalyse ist abgeschlossen. Das Grundgerüst der App steht (Next.js, Prisma 7, SQLite, Tailwind CSS). Als Nächstes setze ich F-001 um, die Online-Buchung für Vorsorge, Beratung und Impfung.
+Die Anforderungsanalyse ist abgeschlossen und das erste Feature ist fertig. Mit F-001 können sich Patient:innen mit Geburtsdatum und Versicherten- bzw. Patientennummer anmelden und online Vorsorge, Beratung oder Impfung buchen. Akutslots sind dabei nie sichtbar, und eine gewählte Uhrzeit ist zwei Minuten für die Person reserviert. Als Nächstes folgt F-002, der Praxiskalender für die MFAs.
 
 ## Lokal starten
 
@@ -14,10 +14,16 @@ Voraussetzung: Node.js 20.9 oder neuer.
 
 ```
 npm install
+npx prisma migrate dev
+npx prisma db seed
 npm run dev
 ```
 
-Danach http://localhost:3000 öffnen. Die Datenbank ist eine lokale Datei (`prisma/dev.db`) und wird beim ersten Zugriff angelegt.
+Danach http://localhost:3000 öffnen. Die Datenbank ist eine lokale Datei (`prisma/dev.db`). Der zweite Befehl legt die Tabellen an, der dritte füllt sie mit erfundenen Testdaten.
+
+Zum Ausprobieren eignet sich zum Beispiel Anna Beispiel mit dem Geburtsdatum 12.04.1980 und der Versichertennummer T000000001. Paul Muster (30.09.1975) ist privat versichert und meldet sich mit der Patientennummer 1002 an. Gerd Probe (01.01.1990, T000000003) ist gesperrt und kommt deshalb nicht in die Online-Buchung.
+
+Die Tests starten mit `npm test`. Sie legen dafür eine eigene Testdatenbank an.
 
 ## Inhalt
 

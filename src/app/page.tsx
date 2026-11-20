@@ -1,31 +1,29 @@
-import { Suspense } from "react";
-import { connection } from "next/server";
-import { prisma } from "@/lib/prisma";
-
-async function DatenbankStatus() {
-  await connection();
-  let version: string | null = null;
-  try {
-    const [row] = await prisma.$queryRaw<{ version: string }[]>`SELECT sqlite_version() AS version`;
-    version = row.version;
-  } catch {
-    version = null;
-  }
-  if (!version) return <p className="text-sm text-red-700">Datenbank nicht erreichbar</p>;
-  return <p className="text-sm text-emerald-700">Datenbank verbunden (SQLite {version})</p>;
-}
+import Link from "next/link";
+import { CalendarCheck, PhoneCall } from "lucide-react";
+import { Karte, knopfHaupt } from "@/components/ui";
 
 export default function Home() {
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center gap-6 px-6 py-24">
-      <p className="text-sm font-medium uppercase tracking-wide text-stone-500">Gemeinschaftspraxis</p>
-      <h1 className="text-4xl font-semibold tracking-tight">Praxis Demir &amp; Kollegen</h1>
-      <p className="text-lg text-stone-600">
-        Online-Terminvergabe. Die erste Funktion ist die Buchung für Vorsorge, Beratung und Impfung (F-001).
-      </p>
-      <Suspense fallback={<p className="text-sm text-stone-500">Prüfe Datenbank …</p>}>
-        <DatenbankStatus />
-      </Suspense>
+    <main className="flex flex-1 flex-col justify-center gap-10">
+      <div className="max-w-2xl">
+        <p className="text-sm font-medium uppercase tracking-wide text-gedaempft">Gemeinschaftspraxis</p>
+        <h1 className="mt-2 font-display text-4xl font-semibold tracking-tight sm:text-5xl">Termine online buchen</h1>
+        <p className="mt-4 text-lg text-gedaempft">
+          Als Patient:in unserer Praxis buchen Sie Vorsorge, Beratung und Impfung direkt hier. Sie brauchen dafür Ihr Geburtsdatum und
+          Ihre Versichertennummer oder Patientennummer.
+        </p>
+        <Link href="/buchen" className={`${knopfHaupt} mt-8`}>
+          <CalendarCheck aria-hidden className="size-4" />
+          Termin buchen
+        </Link>
+      </div>
+      <Karte className="flex max-w-2xl items-start gap-4">
+        <PhoneCall aria-hidden className="mt-1 size-5 shrink-0 text-petrol" />
+        <p className="text-sm text-gedaempft">
+          <span className="font-semibold text-tinte">Akute Beschwerden, Neupatient:innen und andere Terminarten</span> bitte weiterhin
+          telefonisch. Akutsprechstunden vergeben wir nur am Telefon.
+        </p>
+      </Karte>
     </main>
   );
 }

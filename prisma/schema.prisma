@@ -1,5 +1,4 @@
-// Datenmodell der Praxis Demir & Kollegen.
-// Die Modelle entstehen mit dem ersten Feature, das sie braucht (siehe AGENTS.md, Backlog).
+// Datenmodell der Praxis Demir & Kollegen (Stand F-001).
 // Änderungen nur als Migration: npx prisma migrate dev
 
 generator client {
@@ -9,4 +8,88 @@ generator client {
 
 datasource db {
   provider = "sqlite"
+}
+
+model Patient {
+  id                 Int             @id @default(autoincrement()) // Patientennummer
+  name               String
+  geburtsdatum       String // JJJJ-MM-TT, nur das Datum
+  versichertennummer String?         @unique // nur GKV
+  onlineGesperrt     Boolean         @default(false)
+  hausarztId         Int?
+  hausarzt           Arzt?           @relation("Hausarzt", fields: [hausarztId], references: [id])
+  termine            Termin[]
+  reservierungen     Reservierung[]
+}
+
+model Arzt {
+  id             Int             @id @default(autoincrement())
+  name           String
+  titel          String
+  aktiv          Boolean         @default(true)
+  patienten      Patient[]       @relation("Hausarzt")
+  terminarten    ArztTerminart[]
+  sprechzeiten   Sprechzeit[]
+  termine        Termin[]
+  reservierungen Reservierung[]
+}
+
+model Terminart {
+  id             Int             @id @default(autoincrement())
+  bezeichnung    String          @unique
+  dauerMinuten   Int
+  onlineBuchbar  Boolean         @default(false)
+  aerzte         ArztTerminart[]
+  termine        Termin[]
+  reservierungen Reservierung[]
+}
+
+// n:m zwischen Arzt und Terminart (SPEC: nicht jeder Arzt bietet jede Terminart an)
+model ArztTerminart {
+  arztId      Int
+  terminartId Int
+  arzt        Arzt      @relation(fields: [arztId], references: [id])
+  terminart   Terminart @relation(fields: [terminartId], references: [id])
+
+  @@id([arztId, terminartId])
+}
+
+model Sprechzeit {
+  id        Int     @id @default(autoincrement())
+  arztId    Int
+  arzt      Arzt    @relation(fields: [arztId], references: [id])
+  wochentag Int // 1 = Montag … 7 = Sonntag
+  beginn    String // HH:MM, Europe/Berlin
+  ende      String // HH:MM, Europe/Berlin
+  akut      Boolean @default(false) // Akutblock, nie online sichtbar (BR2)
+}
+
+model Termin {
+  id          Int       @id @default(autoincrement())
+  patientId   Int
+  arztId      Int
+  terminartId Int
+  beginn      DateTime
+  status      String    @default("gebucht") // gebucht, abgesagt, wahrgenommen, no_show
+  patient     Patient   @relation(fields: [patientId], references: [id])
+  arzt        Arzt      @relation(fields: [arztId], references: [id])
+  terminart   Terminart @relation(fields: [terminartId], references: [id])
+
+  @@index([arztId, beginn])
+}
+
+// Hält einen Slot etwa zwei Minuten frei, solange die Buchung läuft (Nachr. 15)
+model Reservierung {
+  id          String    @id @default(cuid())
+  patientId   Int
+  arztId      Int
+  terminartId Int
+  beginn      DateTime
+  ende        DateTime
+  ablaufAm    DateTime
+  patient     Patient   @relation(fields: [patientId], references: [id])
+  arzt        Arzt      @relation(fields: [arztId], references: [id])
+  terminart   Terminart @relation(fields: [terminartId], references: [id])
+
+  @@index([arztId, beginn])
 }

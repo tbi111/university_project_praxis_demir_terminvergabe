@@ -1,25 +1,30 @@
 @import "tailwindcss";
 
-:root {
-  --background: #f6f3ee;
-  --foreground: #1f2421;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Design-Richtung „ruhig und vertrauenswürdig“, siehe docs/decisions.md */
+@theme {
+  --color-flaeche: #f6f3ee;
+  --color-karte: #fffdf9;
+  --color-linie: #e4ddd2;
+  --color-tinte: #1f2421;
+  --color-gedaempft: #6b6a63;
+  --color-petrol: #0e5c60;
+  --color-petrol-dunkel: #0a4447;
+  --color-petrol-hell: #e2eeec;
+  --color-fehler: #b42318;
+  --color-fehler-hell: #fdecea;
+  --color-hinweis-hell: #fbf3e2;
+  --font-sans: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
+  --radius-karte: 1rem;
+  --shadow-karte: 0 1px 2px rgb(31 36 33 / 0.05), 0 4px 16px rgb(31 36 33 / 0.04);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--color-flaeche);
+  color: var(--color-tinte);
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-petrol);
+  outline-offset: 2px;
 }
