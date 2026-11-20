@@ -17,7 +17,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="de" className={`${figtree.variable} ${fraunces.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col font-sans">
         <header className="border-b border-linie bg-karte/70">
-          <div className="mx-auto flex w-full max-w-4xl items-center justify-between px-6 py-4">
+          <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
             <Link href="/" className="flex items-center gap-2 font-display text-lg font-semibold text-petrol-dunkel">
               <Stethoscope aria-hidden className="size-5" />
               Praxis Demir &amp; Kollegen
@@ -27,9 +27,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             </Link>
           </div>
         </header>
-        <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-6 py-10">{children}</div>
+        <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-10">{children}</div>
         <footer className="border-t border-linie py-6 text-center text-xs text-gedaempft">
-          Gemeinschaftspraxis Dr. Demir, Dr. Schäfer, Dr. Yilmaz · Akute Beschwerden bitte telefonisch melden
+          Gemeinschaftspraxis Dr. Demir, Dr. Schäfer, Dr. Yilmaz · Akute Beschwerden bitte telefonisch melden ·{" "}
+          <Link href="/praxis" className="underline underline-offset-4 hover:text-petrol">
+            Für das Praxisteam
+          </Link>
         </footer>
       </body>
     </html>

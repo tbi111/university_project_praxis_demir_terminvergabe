@@ -3,6 +3,10 @@ import { berechneFreieSlots, ueberschneidet, type Belegung, type Tagesslots } fr
 import { berlinTag, istGueltigerTag, plusMinuten, tagPlus } from "./zeit";
 
 export const RESERVIERUNG_MINUTEN = 2;
+/** Diese Terminart gehört in die Akutblöcke und wird nur telefonisch vergeben (BR2). */
+export const AKUTSPRECHSTUNDE = "Akutsprechstunde";
+
+export type Modus = "online" | "praxis";
 export const BUCHBAR_TAGE_IM_VORAUS = 56;
 
 // ---------- BR1: Identifikation ----------
@@ -58,16 +62,16 @@ export async function aerzteFuerTerminart(db: Db, terminartId: number, hausarztI
   return aerzte.sort((a, b) => Number(b.id === hausarztId) - Number(a.id === hausarztId));
 }
 
-async function ladeOnlineAngebot(db: Db, arztId: number, terminartId: number) {
+export async function ladeAngebot(db: Db, arztId: number, terminartId: number, modus: Modus = "online") {
   const terminart = await db.terminart.findUnique({ where: { id: terminartId } });
-  if (!terminart || !terminart.onlineBuchbar) return null;
+  if (!terminart || (modus === "online" && !terminart.onlineBuchbar)) return null;
   const angebot = await db.arztTerminart.findUnique({ where: { arztId_terminartId: { arztId, terminartId } } });
   const arzt = await db.arzt.findUnique({ where: { id: arztId } });
   if (!angebot || !arzt?.aktiv) return null;
   return { terminart, arzt };
 }
 
-async function belegungen(db: Db, arztId: number, von: Date, bis: Date, jetzt: Date, ohneReservierungVon?: number): Promise<Belegung[]> {
+export async function belegungen(db: Db, arztId: number, von: Date, bis: Date, jetzt: Date, ohneReservierungVon?: number): Promise<Belegung[]> {
   const termine = await db.termin.findMany({
     where: { arztId, status: { not: "abgesagt" }, beginn: { gte: plusMinuten(von, -120), lt: bis } },
     include: { terminart: true },
@@ -89,9 +93,9 @@ async function belegungen(db: Db, arztId: number, von: Date, bis: Date, jetzt: D
 
 export async function freieSlots(
   db: Db,
-  params: { arztId: number; terminartId: number; abTag: string; tage: number; jetzt: Date; patientId?: number },
+  params: { arztId: number; terminartId: number; abTag: string; tage: number; jetzt: Date; patientId?: number; modus?: Modus },
 ): Promise<Tagesslots[] | null> {
-  const angebot = await ladeOnlineAngebot(db, params.arztId, params.terminartId);
+  const angebot = await ladeAngebot(db, params.arztId, params.terminartId, params.modus);
   if (!angebot) return null;
   const heute = berlinTag(params.jetzt);
   const letzterTag = tagPlus(heute, BUCHBAR_TAGE_IM_VORAUS);
@@ -108,6 +112,7 @@ export async function freieSlots(
     abTag,
     tage,
     jetzt: params.jetzt,
+    bloecke: angebot.terminart.bezeichnung === AKUTSPRECHSTUNDE ? "akut" : "normal",
   });
 }
 
@@ -121,7 +126,7 @@ export async function reserviere(
 ): Promise<Reservierungsergebnis> {
   const { patientId, arztId, terminartId, beginn, jetzt } = params;
   const patient = await ladeOnlinePatient(db, patientId);
-  const angebot = await ladeOnlineAngebot(db, arztId, terminartId);
+  const angebot = await ladeAngebot(db, arztId, terminartId);
   if (!patient || !angebot) return { ok: false, grund: "nicht_buchbar" };
 
   const tag = berlinTag(beginn);
@@ -160,7 +165,7 @@ export async function bucheReservierung(db: Db, params: { reservierungId: string
     if (belegt) return { ok: false as const, grund: "belegt" as const };
 
     const termin = await tx.termin.create({
-      data: { patientId, arztId: r.arztId, terminartId: r.terminartId, beginn: r.beginn, status: "gebucht" },
+      data: { patientId, arztId: r.arztId, terminartId: r.terminartId, beginn: r.beginn, status: "gebucht", quelle: "online" },
     });
     await tx.reservierung.delete({ where: { id: r.id } });
     return { ok: true as const, terminId: termin.id };

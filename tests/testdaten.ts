@@ -33,6 +33,8 @@ export async function testdatenAnlegen() {
   // Montag: 08:00–09:00 normal, 09:00–09:40 Akut
   await db.sprechzeit.create({ data: { arztId: demir.id, wochentag: 1, beginn: "08:00", ende: "09:00" } });
   await db.sprechzeit.create({ data: { arztId: demir.id, wochentag: 1, beginn: "09:00", ende: "09:40", akut: true } });
+  // Montag: Dr. Schäfer erst ab 10:00
+  await db.sprechzeit.create({ data: { arztId: schaefer.id, wochentag: 1, beginn: "10:00", ende: "11:00" } });
 
   const anna = await db.patient.create({
     data: { id: 1001, name: "Anna Testfrau", geburtsdatum: "1980-04-12", versichertennummer: "T000000001", hausarztId: demir.id },

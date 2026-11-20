@@ -44,3 +44,48 @@ export async function sitzungPatientId(): Promise<number | null> {
   if (Number(ablauf) < Date.now() / 1000) return null;
   return Number(id);
 }
+
+// ---------- Praxis-Zugang für die MFAs (F-002) ----------
+// Gemeinsames Praxis-Passwort aus PRAXIS_PASSWORT in der .env, noch ohne einzelne Benutzerkonten.
+const PRAXIS_NAME = "praxis_team";
+const PRAXIS_DAUER_SEKUNDEN = 10 * 60 * 60;
+
+export function praxisPasswortGesetzt() {
+  return Boolean(process.env.PRAXIS_PASSWORT);
+}
+
+export function praxisPasswortStimmt(eingabe: string) {
+  const soll = process.env.PRAXIS_PASSWORT;
+  if (!soll) return false;
+  const a = Buffer.from(signatur(eingabe));
+  const b = Buffer.from(signatur(soll));
+  return timingSafeEqual(a, b);
+}
+
+export async function startePraxisSitzung() {
+  const ablauf = Math.floor(Date.now() / 1000) + PRAXIS_DAUER_SEKUNDEN;
+  const inhalt = `mfa.${ablauf}`;
+  (await cookies()).set(PRAXIS_NAME, `${inhalt}.${signatur(inhalt)}`, {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/praxis",
+    maxAge: PRAXIS_DAUER_SEKUNDEN,
+    secure: process.env.NODE_ENV === "production",
+  });
+}
+
+export async function beendePraxisSitzung() {
+  (await cookies()).delete({ name: PRAXIS_NAME, path: "/praxis" });
+}
+
+export async function istPraxisSitzung(): Promise<boolean> {
+  await connection();
+  const wert = (await cookies()).get(PRAXIS_NAME)?.value;
+  if (!wert) return false;
+  const [rolle, ablauf, sig] = wert.split(".");
+  if (rolle !== "mfa" || !ablauf || !sig) return false;
+  const erwartet = Buffer.from(signatur(`${rolle}.${ablauf}`));
+  const erhalten = Buffer.from(sig);
+  if (erwartet.length !== erhalten.length || !timingSafeEqual(erwartet, erhalten)) return false;
+  return Number(ablauf) >= Date.now() / 1000;
+}

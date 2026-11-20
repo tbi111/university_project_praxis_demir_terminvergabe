@@ -4,7 +4,7 @@ import { Karte, knopfHaupt } from "@/components/ui";
 
 export default function Home() {
   return (
-    <main className="flex flex-1 flex-col justify-center gap-10">
+    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col justify-center gap-10">
       <div className="max-w-2xl">
         <p className="text-sm font-medium uppercase tracking-wide text-gedaempft">Gemeinschaftspraxis</p>
         <h1 className="mt-2 font-display text-4xl font-semibold tracking-tight sm:text-5xl">Termine online buchen</h1>

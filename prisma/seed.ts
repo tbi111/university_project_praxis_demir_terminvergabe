@@ -3,6 +3,7 @@
 import "dotenv/config";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaClient } from "../src/generated/prisma/client";
+import { berlinTag, berlinZeitpunkt, plusMinuten, tagPlus, wochentag } from "../src/lib/zeit";
 
 const db = new PrismaClient({
   adapter: new PrismaBetterSqlite3({ url: process.env.DATABASE_URL ?? "file:./prisma/dev.db" }),
@@ -74,9 +75,44 @@ async function main() {
     { id: 1009, name: "Karl Ausgedacht", geburtsdatum: "1949-02-11", versichertennummer: "T000000009", hausarztId: schaefer.id },
     { id: 1010, name: "Mia Vorlage", geburtsdatum: "2010-09-01", versichertennummer: "T000000010", hausarztId: yilmaz.id },
   ];
-  for (const p of patienten) await db.patient.create({ data: p });
+  for (const p of patienten) await db.patient.create({ data: { ...p, smsEinwilligung: p.id % 2 === 1 } });
 
-  console.log(`Testdaten angelegt: ${arten.length} Terminarten, 3 Ärzt:innen, ${bloecke.length} Sprechzeiten, ${patienten.length} Patient:innen`);
+  // Beispieltermine für die nächsten fünf Werktage, damit der Kalender nicht leer ist.
+  // Ein Teil ist "heute" gebucht, damit die Kennzahlen online/telefonisch etwas zeigen.
+  const jetzt = new Date();
+  const plan: [arztId: number, uhrzeit: string, art: string][] = [
+    [demir.id, "08:00", "Vorsorge"], [demir.id, "08:30", "Beratung"], [demir.id, "09:10", "Impfung"], [demir.id, "10:00", "Blutabnahme"],
+    [schaefer.id, "09:00", "Beratung"], [schaefer.id, "09:30", "Vorsorge"], [schaefer.id, "15:00", "Erstgespräch"],
+    [yilmaz.id, "08:15", "Beratung"], [yilmaz.id, "09:00", "Vorsorge"], [yilmaz.id, "13:30", "Beratung"],
+  ];
+  let tag = berlinTag(jetzt);
+  let werktage = 0;
+  let nr = 0;
+  while (werktage < 5) {
+    tag = tagPlus(tag, 1);
+    if (wochentag(tag) > 5) continue;
+    werktage++;
+    for (const [arztId, uhrzeit, art] of plan) {
+      const passt = bloecke.some(([a, w, b, e, akut]) => a === arztId && w === wochentag(tag) && !akut && b <= uhrzeit && uhrzeit < e);
+      if (!passt || (nr + werktage) % 3 === 0) {
+        nr++;
+        continue;
+      }
+      await db.termin.create({
+        data: {
+          patientId: patienten[nr % patienten.length].id,
+          arztId,
+          terminartId: terminart[art],
+          beginn: berlinZeitpunkt(tag, uhrzeit),
+          quelle: nr % 3 === 1 ? "telefon" : "online",
+          erstelltAm: werktage === 1 ? jetzt : plusMinuten(jetzt, -60 * 24 * (nr % 4 + 1)),
+        },
+      });
+      nr++;
+    }
+  }
+
+  console.log(`Testdaten angelegt: ${arten.length} Terminarten, 3 Ärzt:innen, ${bloecke.length} Sprechzeiten, ${patienten.length} Patient:innen, ${await db.termin.count()} Termine`);
 }
 
 main().finally(() => db.$disconnect());
