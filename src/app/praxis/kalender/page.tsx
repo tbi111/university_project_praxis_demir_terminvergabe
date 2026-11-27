@@ -30,7 +30,7 @@ async function Inhalt({ suche }: { suche: Promise<Suche> }) {
   const jetzt = new Date();
   const heute = berlinTag(jetzt);
   const tag = tagParam && istGueltigerTag(tagParam) ? tagParam : heute;
-  const [spalten, zahlen] = await Promise.all([tagesKalender(prisma, tag, jetzt), tagesKennzahlen(prisma, jetzt)]);
+  const [{ spalten, praxisweit }, zahlen] = await Promise.all([tagesKalender(prisma, tag, jetzt), tagesKennzahlen(prisma, jetzt)]);
   const neuId = neu ? Number(neu) : null;
 
   return (
@@ -75,6 +75,11 @@ async function Inhalt({ suche }: { suche: Promise<Suche> }) {
         </div>
       </div>
 
+      {praxisweit.length > 0 && (
+        <Meldung art="hinweis">
+          Die ganze Praxis ist an diesem Tag geschlossen oder eingeschränkt: {praxisweit.join(", ")}.
+        </Meldung>
+      )}
       <Zeitplan spalten={spalten} neuId={neuId} />
     </>
   );
@@ -93,7 +98,7 @@ function Kennzahl({ icon: Icon, titel, wert, hinweis }: { icon: typeof Globe; ti
   );
 }
 
-type Spalte = Awaited<ReturnType<typeof tagesKalender>>[number];
+type Spalte = Awaited<ReturnType<typeof tagesKalender>>["spalten"][number];
 
 function Zeitplan({ spalten, neuId }: { spalten: Spalte[]; neuId: number | null }) {
   const mitSprechzeit = spalten.filter((s) => s.bloecke.length > 0 || s.termine.length > 0);
@@ -152,6 +157,15 @@ function Zeitplan({ spalten, neuId }: { spalten: Spalte[]; neuId: number | null 
                 {b.akut && <span className="absolute right-1.5 top-1 text-[10px] font-semibold uppercase tracking-wide text-amber-800">Akut</span>}
               </div>
             ))}
+            {s.abwesenheiten.map((w) => (
+              <div
+                key={`abw-${w.id}`}
+                className="absolute inset-x-1 flex items-start justify-center rounded-md bg-stone-300/70 pt-2 text-xs font-semibold text-stone-700 [background-image:repeating-linear-gradient(45deg,transparent,transparent_6px,rgb(255_255_255/0.35)_6px,rgb(255_255_255/0.35)_12px)]"
+                style={{ top: Math.max(0, minuten(w.beginn)) * PX_PRO_MINUTE, height: (Math.min(minuten(w.ende), minuten(ende)) - Math.max(0, minuten(w.beginn))) * PX_PRO_MINUTE }}
+              >
+                {w.grund}
+              </div>
+            ))}
             {s.reservierungen.map((r) => (
               <div
                 key={r.id}
@@ -188,6 +202,7 @@ function Zeitplan({ spalten, neuId }: { spalten: Spalte[]; neuId: number | null 
         <Legende farbe="bg-amber-500" text="telefonisch gebucht" />
         <Legende farbe="bg-petrol-hell" text="Sprechzeit" />
         <Legende farbe="bg-amber-100" text="Akutblock" />
+        <Legende farbe="bg-stone-300" text="abwesend" />
       </div>
     </Karte>
   );

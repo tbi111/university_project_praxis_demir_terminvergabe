@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { legeAbwesenheitAn, loescheAbwesenheit } from "@/lib/abwesenheit";
 import { buchePraxis, legePatientAn, sageTerminAb } from "@/lib/praxis";
 import { prisma } from "@/lib/prisma";
 import { beendePraxisSitzung, istPraxisSitzung, praxisPasswortGesetzt, praxisPasswortStimmt, startePraxisSitzung } from "@/lib/sitzung";
@@ -54,8 +55,12 @@ export async function terminBuchen(formData: FormData) {
   const arztId = Number(formData.get("arzt"));
   const terminartId = Number(formData.get("art"));
   const beginn = new Date(String(formData.get("beginn")));
-  const ergebnis = await buchePraxis(prisma, { patientId, arztId, terminartId, beginn, jetzt: new Date() });
-  if (!ergebnis.ok) redirect(`/praxis/neu?patient=${patientId}&art=${terminartId}&arzt=${arztId}&tag=${berlinTag(beginn)}&fehler=${ergebnis.grund}`);
+  const ersetzt = Number(formData.get("ersetzt")) || undefined;
+  const abw = Number(formData.get("abw")) || undefined;
+  const ergebnis = await buchePraxis(prisma, { patientId, arztId, terminartId, beginn, jetzt: new Date(), ersetztTerminId: ersetzt });
+  const umbuchung = `${ersetzt ? `&ersetzt=${ersetzt}` : ""}${abw ? `&abw=${abw}` : ""}`;
+  if (!ergebnis.ok) redirect(`/praxis/neu?patient=${patientId}&art=${terminartId}&arzt=${arztId}&tag=${berlinTag(beginn)}&fehler=${ergebnis.grund}${umbuchung}`);
+  if (abw) redirect(`/praxis/abwesenheiten/${abw}?umgebucht=1`);
   redirect(`/praxis/kalender?tag=${berlinTag(beginn)}&neu=${ergebnis.terminId}`);
 }
 
@@ -64,5 +69,37 @@ export async function terminAbsagen(formData: FormData) {
   const terminId = Number(formData.get("termin"));
   const termin = await prisma.termin.findUnique({ where: { id: terminId } });
   const ok = await sageTerminAb(prisma, terminId);
+  const zurueck = String(formData.get("zurueck") ?? "");
+  if (/^\/praxis\/abwesenheiten\/\d+$/.test(zurueck)) redirect(`${zurueck}?${ok ? "abgesagt=1" : "fehler=absage"}`);
   redirect(`/praxis/kalender?tag=${termin ? berlinTag(termin.beginn) : ""}&${ok ? "abgesagt=1" : "fehler=absage"}`);
+}
+
+export type AbwesenheitZustand = {
+  fehler?: Partial<Record<"vonTag" | "bisTag" | "grund" | "zeitraum", string>>;
+  werte?: Record<string, string>;
+};
+
+export async function abwesenheitAnlegen(_vorher: AbwesenheitZustand, formData: FormData): Promise<AbwesenheitZustand> {
+  await nurPraxis();
+  const werte = Object.fromEntries(["arzt", "vonTag", "bisTag", "vonUhrzeit", "bisUhrzeit", "grund"].map((k) => [k, String(formData.get(k) ?? "")]));
+  const ergebnis = await legeAbwesenheitAn(
+    prisma,
+    {
+      arztId: werte.arzt === "praxis" ? null : Number(werte.arzt),
+      vonTag: werte.vonTag,
+      bisTag: werte.bisTag || werte.vonTag,
+      vonUhrzeit: werte.vonUhrzeit || undefined,
+      bisUhrzeit: werte.bisUhrzeit || undefined,
+      grund: werte.grund,
+    },
+    new Date(),
+  );
+  if (!ergebnis.ok) return { fehler: ergebnis.fehler, werte };
+  redirect(`/praxis/abwesenheiten/${ergebnis.id}?neu=1`);
+}
+
+export async function abwesenheitLoeschen(formData: FormData) {
+  await nurPraxis();
+  await loescheAbwesenheit(prisma, Number(formData.get("abwesenheit")));
+  redirect("/praxis/abwesenheiten?geloescht=1");
 }

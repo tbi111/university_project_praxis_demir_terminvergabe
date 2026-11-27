@@ -4,6 +4,7 @@ export const db: Db = erstellePrisma("file:./prisma/test.db");
 
 /** Kleiner, fester Datenbestand für die Tests (erfundene Personen). */
 export async function testdatenAnlegen() {
+  await db.abwesenheit.deleteMany();
   await db.reservierung.deleteMany();
   await db.termin.deleteMany();
   await db.sprechzeit.deleteMany();

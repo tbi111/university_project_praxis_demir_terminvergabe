@@ -77,9 +77,9 @@ export type PraxisBuchung = { ok: true; terminId: number } | { ok: false; grund:
  */
 export async function buchePraxis(
   db: Db,
-  params: { patientId: number; arztId: number; terminartId: number; beginn: Date; jetzt: Date },
+  params: { patientId: number; arztId: number; terminartId: number; beginn: Date; jetzt: Date; ersetztTerminId?: number },
 ): Promise<PraxisBuchung> {
-  const { patientId, arztId, terminartId, beginn, jetzt } = params;
+  const { patientId, arztId, terminartId, beginn, jetzt, ersetztTerminId } = params;
   const patient = await db.patient.findUnique({ where: { id: patientId } });
   const angebot = await ladeAngebot(db, arztId, terminartId, "praxis");
   if (!patient || !angebot) return { ok: false, grund: "nicht_buchbar" };
@@ -95,6 +95,13 @@ export async function buchePraxis(
     const termin = await tx.termin.create({
       data: { patientId, arztId, terminartId, beginn, status: "gebucht", quelle: "telefon", erstelltAm: jetzt },
     });
+    // Umbuchen (F-004): der alte Termin wird erst abgesagt, wenn der neue sicher gebucht ist
+    if (ersetztTerminId) {
+      await tx.termin.updateMany({
+        where: { id: ersetztTerminId, patientId, status: "gebucht" },
+        data: { status: "abgesagt", abgesagtAm: jetzt, abgesagtUeber: "telefon" },
+      });
+    }
     return { ok: true as const, terminId: termin.id };
   });
 }
@@ -168,9 +175,11 @@ export async function tagesKalender(db: Db, tag: string, jetzt: Date) {
       sprechzeiten: { where: { wochentag: wochentag(tag) }, orderBy: { beginn: "asc" } },
       termine: { where: { beginn: { gte: von, lt: bis } }, include: { patient: true, terminart: true }, orderBy: { beginn: "asc" } },
       reservierungen: { where: { beginn: { gte: von, lt: bis }, ablaufAm: { gt: jetzt } }, include: { terminart: true } },
+      abwesenheiten: { where: { von: { lt: bis }, bis: { gt: von } } },
     },
   });
-  return aerzte.map((a) => ({
+  const praxisweit = await db.abwesenheit.findMany({ where: { arztId: null, von: { lt: bis }, bis: { gt: von } } });
+  const spalten = aerzte.map((a) => ({
     id: a.id,
     name: `${a.titel} ${a.name}`,
     bloecke: a.sprechzeiten.map((s) => ({ beginn: berlinZeitpunkt(tag, s.beginn), ende: berlinZeitpunkt(tag, s.ende), akut: s.akut })),
@@ -184,7 +193,15 @@ export async function tagesKalender(db: Db, tag: string, jetzt: Date) {
       quelle: t.quelle,
     })),
     reservierungen: a.reservierungen.map((r) => ({ id: r.id, beginn: r.beginn, ende: r.ende, terminart: r.terminart.bezeichnung })),
+    abwesenheiten: [...a.abwesenheiten, ...praxisweit].map((w) => ({
+      id: w.id,
+      beginn: w.von < von ? von : w.von,
+      ende: w.bis > bis ? bis : w.bis,
+      grund: w.grund,
+      praxisweit: w.arztId === null,
+    })),
   }));
+  return { spalten, praxisweit: praxisweit.map((w) => w.grund) };
 }
 
 export { AKUTSPRECHSTUNDE };

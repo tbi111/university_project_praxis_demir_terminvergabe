@@ -85,9 +85,14 @@ export async function belegungen(db: Db, arztId: number, von: Date, bis: Date, j
       ...(ohneReservierungVon !== undefined ? { patientId: { not: ohneReservierungVon } } : {}),
     },
   });
+  // Abwesenheiten der Ärzt:in oder der ganzen Praxis sperren die Zeit ebenfalls (F-004)
+  const abwesenheiten = await db.abwesenheit.findMany({
+    where: { OR: [{ arztId }, { arztId: null }], von: { lt: bis }, bis: { gt: von } },
+  });
   return [
     ...termine.map((t) => ({ beginn: t.beginn, ende: plusMinuten(t.beginn, t.terminart.dauerMinuten) })),
     ...reservierungen.map((r) => ({ beginn: r.beginn, ende: r.ende })),
+    ...abwesenheiten.map((a) => ({ beginn: a.von, ende: a.bis })),
   ];
 }
 
@@ -161,7 +166,11 @@ export async function bucheReservierung(db: Db, params: { reservierungId: string
       where: { arztId: r.arztId, status: { not: "abgesagt" }, beginn: { gte: plusMinuten(r.beginn, -120), lt: r.ende } },
       include: { terminart: true },
     });
-    const belegt = termine.some((t) => ueberschneidet(r, { beginn: t.beginn, ende: plusMinuten(t.beginn, t.terminart.dauerMinuten) }));
+    const abwesend = await tx.abwesenheit.count({
+      where: { OR: [{ arztId: r.arztId }, { arztId: null }], von: { lt: r.ende }, bis: { gt: r.beginn } },
+    });
+    const belegt =
+      abwesend > 0 || termine.some((t) => ueberschneidet(r, { beginn: t.beginn, ende: plusMinuten(t.beginn, t.terminart.dauerMinuten) }));
     if (belegt) return { ok: false as const, grund: "belegt" as const };
 
     const termin = await tx.termin.create({

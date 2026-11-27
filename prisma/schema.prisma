@@ -1,4 +1,4 @@
-// Datenmodell der Praxis Demir & Kollegen (Stand F-003).
+// Datenmodell der Praxis Demir & Kollegen (Stand F-004).
 // Änderungen nur als Migration: npx prisma migrate dev
 
 generator client {
@@ -33,6 +33,7 @@ model Arzt {
   sprechzeiten   Sprechzeit[]
   termine        Termin[]
   reservierungen Reservierung[]
+  abwesenheiten  Abwesenheit[]
 }
 
 model Terminart {
@@ -97,4 +98,16 @@ model Reservierung {
   terminart   Terminart @relation(fields: [terminartId], references: [id])
 
   @@index([arztId, beginn])
+}
+
+// Urlaub, Fortbildung oder Krankheit. Ohne Arzt gilt die Abwesenheit für die ganze Praxis (Nachr. 12, 14)
+model Abwesenheit {
+  id     Int      @id @default(autoincrement())
+  arztId Int?
+  arzt   Arzt?    @relation(fields: [arztId], references: [id])
+  von    DateTime
+  bis    DateTime
+  grund  String
+
+  @@index([von, bis])
 }

@@ -12,7 +12,7 @@ import { PraxisKopf } from "../kopf";
 import { terminBuchen } from "../aktionen";
 import { Anlageformular } from "./anlageformular";
 
-type Suche = { q?: string; patient?: string; art?: string; arzt?: string; tag?: string; angelegt?: string; fehler?: string };
+type Suche = { q?: string; patient?: string; art?: string; arzt?: string; tag?: string; angelegt?: string; fehler?: string; ersetzt?: string; abw?: string };
 
 export default function NeuSeite({ searchParams }: PageProps<"/praxis/neu">) {
   return (
@@ -42,11 +42,18 @@ async function Inhalt({ suche }: { suche: Promise<Suche> }) {
 
   const arten = await prisma.terminart.findMany({ orderBy: { bezeichnung: "asc" } });
   const art = arten.find((a) => String(a.id) === s.art);
-  const basis: Suche = { patient: String(patient.id) };
+  const basis: Suche = { patient: String(patient.id), ersetzt: s.ersetzt, abw: s.abw };
+  const alt = s.ersetzt ? await prisma.termin.findUnique({ where: { id: Number(s.ersetzt) }, include: { arzt: true, terminart: true } }) : null;
 
   return (
     <>
       {s.angelegt && <Meldung art="hinweis">{patient.name} ist angelegt und kann ab jetzt auch online buchen.</Meldung>}
+      {alt && alt.patientId === patient.id && (
+        <Meldung art="hinweis">
+          Umbuchung: Der bisherige Termin ({alt.terminart.bezeichnung} bei {alt.arzt.titel} {alt.arzt.name}, {formatTag(alt.beginn)}, {formatUhrzeit(alt.beginn)} Uhr) wird
+          automatisch abgesagt, sobald der neue Termin gebucht ist.
+        </Meldung>
+      )}
       {s.fehler && <Meldung art="fehler">Diese Uhrzeit ist inzwischen vergeben. Bitte eine andere wählen.</Meldung>}
 
       <Karte className="mb-8 flex flex-wrap items-center justify-between gap-3 p-5">
@@ -79,7 +86,18 @@ async function Inhalt({ suche }: { suche: Promise<Suche> }) {
         ))}
       </div>
 
-      {art && <Zeitwahl patientId={patient.id} hausarztId={patient.hausarztId} artId={art.id} artName={art.bezeichnung} arzt={s.arzt} tag={s.tag} />}
+      {art && (
+        <Zeitwahl
+          patientId={patient.id}
+          hausarztId={patient.hausarztId}
+          artId={art.id}
+          artName={art.bezeichnung}
+          arzt={s.arzt}
+          tag={s.tag}
+          ersetzt={alt && alt.patientId === patient.id ? String(alt.id) : undefined}
+          abw={s.abw}
+        />
+      )}
     </>
   );
 }
@@ -132,10 +150,19 @@ async function PatientWaehlen({ q }: { q?: string }) {
   );
 }
 
-async function Zeitwahl(props: { patientId: number; hausarztId: number | null; artId: number; artName: string; arzt?: string; tag?: string }) {
+async function Zeitwahl(props: {
+  patientId: number;
+  hausarztId: number | null;
+  artId: number;
+  artName: string;
+  arzt?: string;
+  tag?: string;
+  ersetzt?: string;
+  abw?: string;
+}) {
   const jetzt = new Date();
   const heute = berlinTag(jetzt);
-  const basis: Suche = { patient: String(props.patientId), art: String(props.artId) };
+  const basis: Suche = { patient: String(props.patientId), art: String(props.artId), ersetzt: props.ersetzt, abw: props.abw };
   const [vorschlaege, aerzte] = await Promise.all([
     naechsteFreieTermine(prisma, { terminartId: props.artId, hausarztId: props.hausarztId, jetzt }),
     aerzteFuerTerminart(prisma, props.artId, props.hausarztId),
@@ -148,6 +175,8 @@ async function Zeitwahl(props: { patientId: number; hausarztId: number | null; a
       <input type="hidden" name="patient" value={props.patientId} />
       <input type="hidden" name="art" value={props.artId} />
       <input type="hidden" name="arzt" value={arztId} />
+      {props.ersetzt && <input type="hidden" name="ersetzt" value={props.ersetzt} />}
+      {props.abw && <input type="hidden" name="abw" value={props.abw} />}
       <input type="hidden" name="beginn" value={beginn.toISOString()} />
       <button className={klasse}>{inhalt}</button>
     </form>

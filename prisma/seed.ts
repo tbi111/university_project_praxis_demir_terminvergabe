@@ -10,6 +10,7 @@ const db = new PrismaClient({
 });
 
 async function main() {
+  await db.abwesenheit.deleteMany();
   await db.reservierung.deleteMany();
   await db.termin.deleteMany();
   await db.sprechzeit.deleteMany();
@@ -117,6 +118,10 @@ async function main() {
         data: { patientId: 1001, arztId: demir.id, terminartId: terminart["Beratung"], beginn: berlinZeitpunkt(tag, "10:30"), quelle: "online", erstelltAm: plusMinuten(jetzt, -60 * 24 * 3) },
       });
     }
+    // Dr. Schäfer ist am zweiten Werktag auf Fortbildung. Die Termine an dem Tag stehen dann in der Liste "betroffene Termine".
+    if (werktage === 2) {
+      await db.abwesenheit.create({ data: { arztId: schaefer.id, von: berlinZeitpunkt(tag, "00:00"), bis: berlinZeitpunkt(tagPlus(tag, 1), "00:00"), grund: "Fortbildung" } });
+    }
     // Ein heute online abgesagter Termin für die Kennzahl im Praxiskalender
     if (werktage === 3) {
       await db.termin.create({
@@ -128,7 +133,7 @@ async function main() {
     }
   }
 
-  console.log(`Testdaten angelegt: ${arten.length} Terminarten, 3 Ärzt:innen, ${bloecke.length} Sprechzeiten, ${patienten.length} Patient:innen, ${await db.termin.count()} Termine`);
+  console.log(`Testdaten angelegt: ${arten.length} Terminarten, 3 Ärzt:innen, ${bloecke.length} Sprechzeiten, ${patienten.length} Patient:innen, ${await db.termin.count()} Termine, ${await db.abwesenheit.count()} Abwesenheit`);
 }
 
 main().finally(() => db.$disconnect());
