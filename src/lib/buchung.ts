@@ -171,3 +171,37 @@ export async function bucheReservierung(db: Db, params: { reservierungId: string
     return { ok: true as const, terminId: termin.id };
   });
 }
+
+// ---------- BR3: eigene Termine und Online-Absage ----------
+
+export const ABSAGE_FRIST_STUNDEN = 24;
+
+/** Online abgesagt werden darf nur bis 24 Stunden vor Beginn (BR3). Genau 24 Stunden sind noch erlaubt. */
+export function onlineAbsagbar(beginn: Date, jetzt: Date): boolean {
+  return beginn.getTime() - jetzt.getTime() >= ABSAGE_FRIST_STUNDEN * 3600000;
+}
+
+/** Kommende gebuchte Termine einer Person, egal ob online oder telefonisch gebucht. */
+export async function eigeneTermine(db: Db, patientId: number, jetzt: Date) {
+  const termine = await db.termin.findMany({
+    where: { patientId, status: "gebucht", beginn: { gt: jetzt } },
+    include: { arzt: true, terminart: true },
+    orderBy: { beginn: "asc" },
+  });
+  return termine.map((t) => ({ ...t, absagbar: onlineAbsagbar(t.beginn, jetzt) }));
+}
+
+export type Absageergebnis = { ok: true } | { ok: false; grund: "nicht_gefunden" | "zu_spaet" | "nicht_gebucht" };
+
+export async function sageOnlineAb(db: Db, params: { terminId: number; patientId: number; jetzt: Date }): Promise<Absageergebnis> {
+  const { terminId, patientId, jetzt } = params;
+  const termin = await db.termin.findUnique({ where: { id: terminId } });
+  if (!termin || termin.patientId !== patientId) return { ok: false, grund: "nicht_gefunden" };
+  if (termin.status !== "gebucht") return { ok: false, grund: "nicht_gebucht" };
+  if (!onlineAbsagbar(termin.beginn, jetzt)) return { ok: false, grund: "zu_spaet" };
+  const { count } = await db.termin.updateMany({
+    where: { id: terminId, patientId, status: "gebucht" },
+    data: { status: "abgesagt", abgesagtAm: jetzt, abgesagtUeber: "online" },
+  });
+  return count === 1 ? { ok: true } : { ok: false, grund: "nicht_gebucht" };
+}

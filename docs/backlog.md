@@ -4,7 +4,7 @@
 |---|---|---|---|---|
 | F-001 | Patient:in meldet sich mit Geburtsdatum und Versicherten- bzw. Patientennummer an und bucht online einen Termin (Vorsorge, Beratung, Impfung), Slot ist während der Buchung ca. zwei Minuten reserviert | 1 | fertig | BR1, BR2 · Patient, Arzt, Terminart, Sprechzeit, Termin |
 | F-002 | MFA legt Patient:in an und bucht telefonisch einen Termin im Praxiskalender, auch in Akutslots, ohne Doppelbuchung | 1 | fertig | BR1, BR2 · Patient, Arzt, Terminart, Sprechzeit, Termin |
-| F-003 | Patient:in sieht die eigenen Termine und sagt einen Termin bis 24 Stunden vorher online ab | 1 | offen | BR3 · Patient, Termin |
+| F-003 | Patient:in sieht die eigenen Termine und sagt einen Termin bis 24 Stunden vorher online ab | 1 | fertig | BR3 · Patient, Termin |
 | F-004 | MFA trägt eine Abwesenheit (Ärzt:in oder ganze Praxis) ein und arbeitet die Liste der betroffenen Termine ab | 1 | offen | Abwesenheit, Arzt, Termin |
 | F-005 | Ärzt:in öffnet die eigene Tagesliste, sieht Termingrund und Notizen und behandelt als Vertretung mit eingeschränkter Sicht | 1 | offen | Arzt, Patient, Termin, Notiz |
 | F-006 | MFA erfasst ein Nichterscheinen, das System markiert beim dritten No-Show in zwölf Monaten, die MFA sperrt von Hand | 2 | offen | BR4 · Patient, Termin |

@@ -6,7 +6,7 @@ Die Gemeinschaftspraxis von Dr. Demir vergibt ihre Termine bisher fast nur telef
 
 ## Stand
 
-Die Anforderungsanalyse ist abgeschlossen, und die ersten beiden Features sind fertig. Mit F-001 können sich Patient:innen anmelden und online Vorsorge, Beratung oder Impfung buchen. Akutslots sind dabei nie sichtbar, und eine gewählte Uhrzeit ist zwei Minuten reserviert. Mit F-002 hat das Praxisteam einen Tageskalender für alle drei Ärzt:innen. Dort legt die MFA Neupatient:innen an, bucht telefonisch und sagt Termine ab. Der Kalender zeigt außerdem jeden Tag, wie viele Termine online und wie viele telefonisch gebucht wurden. Daran misst die Praxis, ob die App die Anrufe wirklich reduziert. Als Nächstes folgt F-003, die Online-Absage.
+Die Anforderungsanalyse ist abgeschlossen, und die ersten drei Features sind fertig. Mit F-001 können sich Patient:innen anmelden und online Vorsorge, Beratung oder Impfung buchen. Akutslots sind dabei nie sichtbar, und eine gewählte Uhrzeit ist zwei Minuten reserviert. Mit F-002 hat das Praxisteam einen Tageskalender für alle drei Ärzt:innen. Dort legt die MFA Neupatient:innen an, bucht telefonisch und sagt Termine ab. Der Kalender zeigt außerdem jeden Tag, wie viele Termine online und wie viele telefonisch gebucht wurden. Daran misst die Praxis, ob die App die Anrufe wirklich reduziert. Mit F-003 sehen Patient:innen ihre eigenen Termine und können sie bis 24 Stunden vorher selbst absagen. Danach ist die Zeit sofort wieder frei. Als Nächstes folgt F-004, die Abwesenheiten.
 
 ## Lokal starten
 
@@ -14,7 +14,7 @@ Voraussetzung: Node.js 20.9 oder neuer.
 
 ```
 npm install
-npx prisma migrate dev
+npm run db:migrate
 npx prisma db seed
 npm run dev
 ```

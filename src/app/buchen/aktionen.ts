@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { bucheReservierung, identifiziere, reserviere } from "@/lib/buchung";
+import { bucheReservierung, identifiziere, reserviere, sageOnlineAb } from "@/lib/buchung";
 import { prisma } from "@/lib/prisma";
 import { beendeSitzung, sitzungPatientId, starteSitzung } from "@/lib/sitzung";
 
@@ -61,4 +61,12 @@ export async function buchenAktion(formData: FormData) {
 export async function abmelden() {
   await beendeSitzung();
   redirect("/");
+}
+
+export async function absagenAktion(formData: FormData) {
+  const patientId = await sitzungPatientId();
+  if (!patientId) redirect("/buchen");
+  const terminId = Number(formData.get("termin"));
+  const ergebnis = await sageOnlineAb(prisma, { terminId, patientId, jetzt: new Date() });
+  redirect(ergebnis.ok ? "/buchen/meine-termine?abgesagt=1" : `/buchen/meine-termine?fehler=${ergebnis.grund}`);
 }

@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ChevronLeft, ChevronRight, Globe, Phone, TrendingUp } from "lucide-react";
+import { CalendarX2, ChevronLeft, ChevronRight, Globe, Phone, TrendingUp } from "lucide-react";
 import { tagesKalender, tagesKennzahlen } from "@/lib/praxis";
 import { prisma } from "@/lib/prisma";
 import { istPraxisSitzung } from "@/lib/sitzung";
@@ -35,7 +35,7 @@ async function Inhalt({ suche }: { suche: Promise<Suche> }) {
 
   return (
     <>
-      <div className="mb-8 grid gap-3 sm:grid-cols-3">
+      <div className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Kennzahl icon={Globe} titel="Heute online gebucht" wert={String(zahlen.online)} />
         <Kennzahl icon={Phone} titel="Heute telefonisch gebucht" wert={String(zahlen.telefon)} />
         <Kennzahl
@@ -44,6 +44,7 @@ async function Inhalt({ suche }: { suche: Promise<Suche> }) {
           wert={zahlen.anteilOnline === null ? "–" : `${zahlen.anteilOnline} %`}
           hinweis="Ziel der Praxis: deutlich weniger Anrufe am Montagmorgen"
         />
+        <Kennzahl icon={CalendarX2} titel="Heute online abgesagt" wert={String(zahlen.onlineAbgesagt)} hinweis="Jede Online-Absage spart einen Anruf" />
       </div>
 
       {neuId && <Meldung art="hinweis">Der Termin ist gebucht und im Kalender markiert.</Meldung>}

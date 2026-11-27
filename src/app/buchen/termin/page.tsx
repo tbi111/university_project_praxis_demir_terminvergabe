@@ -9,7 +9,8 @@ import { sitzungPatientId } from "@/lib/sitzung";
 import { berlinTag, berlinZeitpunkt, formatTag, formatUhrzeit, istGueltigerTag, tagPlus, wochentag } from "@/lib/zeit";
 import { Schrittleiste } from "@/components/schrittleiste";
 import { Karte, Laden, Meldung, Seitentitel, knopfNeben } from "@/components/ui";
-import { abmelden, reservierenAktion } from "../aktionen";
+import { reservierenAktion } from "../aktionen";
+import { Patientenkopf } from "@/components/patientenkopf";
 
 type Suche = { art?: string; arzt?: string; ab?: string; fehler?: string };
 
@@ -50,12 +51,7 @@ async function Inhalt({ suche }: { suche: Promise<Suche> }) {
   return (
     <>
       <Schrittleiste aktiv={gewaehlterArzt ? 3 : 2} />
-      <div className="mb-2 flex items-center justify-between text-sm text-gedaempft">
-        <span>Angemeldet als {patient.name}</span>
-        <form action={abmelden}>
-          <button className="underline underline-offset-4 hover:text-petrol">Abmelden</button>
-        </form>
-      </div>
+      <Patientenkopf name={patient.name} aktiv="buchen" />
       <Seitentitel titel="Termin auswählen" unterzeile="Online buchbar sind Vorsorge, Beratung und Impfung." />
       {fehler && FEHLERTEXT[fehler] && <Meldung art="fehler">{FEHLERTEXT[fehler]}</Meldung>}
 

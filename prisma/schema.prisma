@@ -1,4 +1,4 @@
-// Datenmodell der Praxis Demir & Kollegen (Stand F-002).
+// Datenmodell der Praxis Demir & Kollegen (Stand F-003).
 // Änderungen nur als Migration: npx prisma migrate dev
 
 generator client {
@@ -74,6 +74,8 @@ model Termin {
   status      String    @default("gebucht") // gebucht, abgesagt, wahrgenommen, no_show
   quelle      String    @default("online") // online, telefon (Erfolgsmaß aus Nachr. 11)
   erstelltAm  DateTime  @default(now())
+  abgesagtAm    DateTime?
+  abgesagtUeber String? // online, telefon
   patient     Patient   @relation(fields: [patientId], references: [id])
   arzt        Arzt      @relation(fields: [arztId], references: [id])
   terminart   Terminart @relation(fields: [terminartId], references: [id])

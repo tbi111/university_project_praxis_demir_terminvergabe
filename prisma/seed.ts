@@ -110,6 +110,22 @@ async function main() {
       });
       nr++;
     }
+    // Anna Beispiel bekommt an den ersten beiden Werktagen je einen Termin, damit "Meine Termine" etwas zeigt.
+    // Liegt der erste davon weniger als 24 Stunden in der Zukunft, sieht man dort den Hinweis zur telefonischen Absage.
+    if (werktage <= 2) {
+      await db.termin.create({
+        data: { patientId: 1001, arztId: demir.id, terminartId: terminart["Beratung"], beginn: berlinZeitpunkt(tag, "10:30"), quelle: "online", erstelltAm: plusMinuten(jetzt, -60 * 24 * 3) },
+      });
+    }
+    // Ein heute online abgesagter Termin für die Kennzahl im Praxiskalender
+    if (werktage === 3) {
+      await db.termin.create({
+        data: {
+          patientId: 1004, arztId: yilmaz.id, terminartId: terminart["Beratung"], beginn: berlinZeitpunkt(tag, "13:45"),
+          quelle: "online", erstelltAm: plusMinuten(jetzt, -60 * 24 * 5), status: "abgesagt", abgesagtAm: jetzt, abgesagtUeber: "online",
+        },
+      });
+    }
   }
 
   console.log(`Testdaten angelegt: ${arten.length} Terminarten, 3 Ärzt:innen, ${bloecke.length} Sprechzeiten, ${patienten.length} Patient:innen, ${await db.termin.count()} Termine`);

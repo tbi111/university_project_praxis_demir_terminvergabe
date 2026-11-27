@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CircleCheck } from "lucide-react";
 import { prisma } from "@/lib/prisma";
@@ -38,9 +39,14 @@ async function Inhalt({ suche }: { suche: Promise<{ t?: string }> }) {
         </span>
       </p>
       <p className="text-sm text-gedaempft">Bitte notieren Sie sich den Termin.</p>
-      <form action={abmelden}>
-        <button className={knopfNeben}>Fertig und abmelden</button>
-      </form>
+      <div className="flex flex-wrap justify-center gap-3">
+        <Link href="/buchen/meine-termine" className={knopfNeben}>
+          Meine Termine
+        </Link>
+        <form action={abmelden}>
+          <button className={knopfNeben}>Fertig und abmelden</button>
+        </form>
+      </div>
     </Karte>
   );
 }

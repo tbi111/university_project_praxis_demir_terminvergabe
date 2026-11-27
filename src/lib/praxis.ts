@@ -100,8 +100,11 @@ export async function buchePraxis(
 }
 
 /** MFAs dürfen alle Termine bearbeiten. Abgesagte Termine geben die Zeit wieder frei. */
-export async function sageTerminAb(db: Db, terminId: number): Promise<boolean> {
-  const { count } = await db.termin.updateMany({ where: { id: terminId, status: "gebucht" }, data: { status: "abgesagt" } });
+export async function sageTerminAb(db: Db, terminId: number, jetzt = new Date()): Promise<boolean> {
+  const { count } = await db.termin.updateMany({
+    where: { id: terminId, status: "gebucht" },
+    data: { status: "abgesagt", abgesagtAm: jetzt, abgesagtUeber: "telefon" },
+  });
   return count === 1;
 }
 
@@ -142,7 +145,7 @@ export async function naechsteFreieTermine(
 
 // ---------- Tageskalender und Kennzahlen ----------
 
-/** Wie viele Termine heute online und wie viele telefonisch gebucht wurden (Erfolgsmaß aus Nachr. 11). */
+/** Wie viele Termine heute online und telefonisch gebucht und wie viele online abgesagt wurden (Erfolgsmaß aus Nachr. 11). */
 export async function tagesKennzahlen(db: Db, jetzt: Date) {
   const heute = berlinTag(jetzt);
   const von = berlinZeitpunkt(heute, "00:00");
@@ -151,7 +154,8 @@ export async function tagesKennzahlen(db: Db, jetzt: Date) {
   const online = gruppen.find((g) => g.quelle === "online")?._count ?? 0;
   const telefon = gruppen.find((g) => g.quelle === "telefon")?._count ?? 0;
   const summe = online + telefon;
-  return { online, telefon, anteilOnline: summe === 0 ? null : Math.round((online / summe) * 100) };
+  const onlineAbgesagt = await db.termin.count({ where: { abgesagtUeber: "online", abgesagtAm: { gte: von, lt: bis } } });
+  return { online, telefon, anteilOnline: summe === 0 ? null : Math.round((online / summe) * 100), onlineAbgesagt };
 }
 
 export async function tagesKalender(db: Db, tag: string, jetzt: Date) {

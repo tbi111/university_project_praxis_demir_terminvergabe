@@ -115,6 +115,6 @@ describe("F-002: Hilfen fürs Telefonat", () => {
     const r = await reserviere(db, { patientId: daten.privat.id, arztId: daten.demir.id, terminartId: daten.arten.beratung.id, beginn: um("08:15"), jetzt: JETZT });
     if (r.ok) await bucheReservierung(db, { reservierungId: r.reservierungId, patientId: daten.privat.id, jetzt: JETZT });
     await db.termin.updateMany({ data: { erstelltAm: JETZT } });
-    expect(await tagesKennzahlen(db, JETZT)).toEqual({ online: 1, telefon: 1, anteilOnline: 50 });
+    expect(await tagesKennzahlen(db, JETZT)).toEqual({ online: 1, telefon: 1, anteilOnline: 50, onlineAbgesagt: 0 });
   });
 });
